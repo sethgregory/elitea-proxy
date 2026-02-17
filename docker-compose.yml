@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  elitea-proxy:
+    build: .
+    ports:
+      - "${SERVER_PORT:-4000}:4000"
+    environment:
+      # Required - must be set in your .env file
+      - ELITEA_TOKEN=${ELITEA_TOKEN}
+
+      # Optional - can be overridden in .env
+      - ELITEA_BASE_URL=${ELITEA_BASE_URL:-https://next.elitea.ai/llm/v1}
+      - SERVER_HOST=${SERVER_HOST:-0.0.0.0}
+      - SERVER_PORT=${SERVER_PORT:-4000}
+      - SERVER_DEBUG=${SERVER_DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - REQUEST_TIMEOUT=${REQUEST_TIMEOUT:-30}
+      - STREAM_CHUNK_SIZE=${STREAM_CHUNK_SIZE:-1024}
+      - TOKEN_ESTIMATION_RATIO=${TOKEN_ESTIMATION_RATIO:-4}
+
+    env_file:
+      - .env
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:4000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

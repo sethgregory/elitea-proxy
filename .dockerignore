@@ -1,0 +1,39 @@
+# Don't copy sensitive files to Docker image
+.env
+
+# Git files
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Documentation (optional - include if you want docs in image)
+# README.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker files (don't need these in the image)
+Dockerfile
+docker-compose.yml
+.dockerignore
