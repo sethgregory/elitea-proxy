@@ -49,11 +49,27 @@ class Config:
         self.STREAM_CHUNK_SIZE = int(os.getenv('STREAM_CHUNK_SIZE', '1024'))
         self.TOKEN_ESTIMATION_RATIO = int(os.getenv('TOKEN_ESTIMATION_RATIO', '4'))
 
-        # Model mappings
+        # Model mappings - Updated based on available ELITEA models (use --list-models to verify)
+        # Strategy: Map Claude Code model names to the best available ELITEA equivalents
         self.MODEL_MAPPINGS = {
+            # Exact matches - pass through unchanged
+            "eu.anthropic.claude-sonnet-4-6": "eu.anthropic.claude-sonnet-4-6",
             "eu.anthropic.claude-sonnet-4-20250514-v1:0": "eu.anthropic.claude-sonnet-4-20250514-v1:0",
-            "claude-haiku-4-5-20251001": "eu.anthropic.claude-sonnet-4-20250514-v1:0",
+            "eu.anthropic.claude-haiku-4-5-20251001-v1:0": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+            "eu.anthropic.claude-3-7-sonnet-20250219-v1:0": "eu.anthropic.claude-3-7-sonnet-20250219-v1:0",
+
+            # Claude Code standard model names -> Best available ELITEA models
+            "claude-sonnet-4-6": "eu.anthropic.claude-sonnet-4-6",
+            "claude-opus-4-6": "eu.anthropic.claude-sonnet-4-6",  # Map Opus to best Sonnet (no Opus available)
+            "claude-haiku-4-5-20251001": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
             "claude-sonnet-4-5-20250929": "eu.anthropic.claude-sonnet-4-20250514-v1:0",
+
+            # Generic model names -> Latest models
+            "claude-3-5-sonnet": "eu.anthropic.claude-3-7-sonnet-20250219-v1:0",
+            "claude-3-haiku": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+            "claude-sonnet": "eu.anthropic.claude-sonnet-4-6",
+            "claude-haiku": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+            "claude-opus": "eu.anthropic.claude-sonnet-4-6",  # No Opus available, use best Sonnet
         }
 
         # Parameters to strip from requests

@@ -8,6 +8,7 @@ from flask import Flask, request, Response
 import requests
 import json
 import logging
+import argparse
 from config import config
 
 try:
@@ -207,8 +208,119 @@ def display_startup_banner():
     # Print the banner
     print(banner)
 
+def list_models():
+    """Display available models from ELITEA API."""
+    print(f"{Fore.GREEN}{Style.BRIGHT}Available Models from ELITEA:{Style.RESET_ALL}")
+    print()
+
+    try:
+        # Query ELITEA API for available models
+        headers = config.get_elitea_headers()
+
+        # Try the standard /v1/models endpoint
+        models_url = f"{config.ELITEA_BASE_URL}/models"
+        response = requests.get(models_url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            models_data = response.json()
+
+            # Handle different response formats
+            models = []
+            if isinstance(models_data, dict) and 'data' in models_data:
+                # OpenAI-style format: {"data": [{"id": "model-name", ...}, ...]}
+                models = [model.get('id', 'unknown') for model in models_data['data']]
+            elif isinstance(models_data, list):
+                # Simple list format: ["model1", "model2", ...]
+                models = models_data
+            elif isinstance(models_data, dict) and 'models' in models_data:
+                # Alternative format: {"models": [...]}
+                models = models_data['models']
+
+            if models:
+                # Remove duplicates and sort
+                unique_models = sorted(set(models))
+
+                # Group models by type for better organization
+                claude_models = [m for m in unique_models if 'claude' in m.lower()]
+                gpt_models = [m for m in unique_models if 'gpt' in m.lower()]
+                o_models = [m for m in unique_models if m.startswith('o') and 'gpt' not in m.lower()]
+                embedding_models = [m for m in unique_models if 'embedding' in m.lower()]
+                other_models = [m for m in unique_models if m not in claude_models + gpt_models + o_models + embedding_models]
+
+                # Display models by category
+                categories = [
+                    ("Claude Models", claude_models, Fore.MAGENTA),
+                    ("GPT Models", gpt_models, Fore.GREEN),
+                    ("OpenAI O-Series Models", o_models, Fore.BLUE),
+                    ("Embedding Models", embedding_models, Fore.YELLOW),
+                    ("Other Models", other_models, Fore.CYAN)
+                ]
+
+                total_models = len(unique_models)
+                for category_name, category_models, color in categories:
+                    if category_models:
+                        print(f"  {Style.BRIGHT}{category_name}:{Style.RESET_ALL}")
+                        for model in category_models:
+                            print(f"    {color}• {model}{Style.RESET_ALL}")
+                        print()
+
+                print(f"  {Fore.GREEN}Total: {total_models} unique models available{Style.RESET_ALL}")
+            else:
+                print(f"  {Fore.YELLOW}No models found in API response{Style.RESET_ALL}")
+
+        else:
+            print(f"  {Fore.RED}Error: API returned status {response.status_code}{Style.RESET_ALL}")
+            if response.text:
+                print(f"  {Fore.RED}Response: {response.text[:200]}{Style.RESET_ALL}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"  {Fore.RED}Error connecting to ELITEA API: {e}{Style.RESET_ALL}")
+        print(f"  {Fore.YELLOW}Falling back to configured model mappings:{Style.RESET_ALL}")
+        print()
+
+        # Fallback to showing local mappings
+        for original, mapped in config.MODEL_MAPPINGS.items():
+            if original == mapped:
+                print(f"  {Fore.CYAN}• {original}{Style.RESET_ALL}")
+            else:
+                print(f"  {Fore.CYAN}• {original}{Style.RESET_ALL} {Fore.YELLOW}→{Style.RESET_ALL} {Fore.MAGENTA}{mapped}{Style.RESET_ALL}")
+
+    except Exception as e:
+        print(f"  {Fore.RED}Unexpected error: {e}{Style.RESET_ALL}")
+
+    print()
+    print(f"{Fore.BLUE}Note:{Style.RESET_ALL} Claude Code model names are automatically mapped to ELITEA-compatible models")
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="ELITEA proxy server for Claude Code",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                    # Start the proxy server
+  %(prog)s --list-models      # Show available models
+        """
+    )
+
+    parser.add_argument(
+        '--list-models',
+        action='store_true',
+        help='List available models and exit (does not start server)'
+    )
+
+    return parser.parse_args()
+
 if __name__ == '__main__':
     try:
+        # Parse command line arguments
+        args = parse_args()
+
+        # Handle --list-models flag
+        if args.list_models:
+            list_models()
+            exit(0)
+
         # Display startup banner
         display_startup_banner()
 

@@ -5,6 +5,7 @@ A secure Flask-based proxy service that translates Claude Code requests to the E
 ## Features
 
 - **Secure Configuration**: Environment-based configuration with no hardcoded secrets
+- **Model Discovery**: Query available models from ELITEA API with `--list-models`
 - **Model Mapping**: Automatic mapping between Claude Code and ELITEA model names
 - **Parameter Filtering**: Strips unsupported parameters like `thinking` and `anthropic_beta`
 - **Token Estimation**: Local token counting to avoid unnecessary API calls
@@ -78,6 +79,12 @@ LOG_LEVEL=INFO
 python elitea-proxy.py
 ```
 
+You can also check available models before starting:
+
+```bash
+python elitea-proxy.py --list-models
+```
+
 The server will start on `http://localhost:4000` by default. You'll first see a colorful ASCII art banner for "Claude-Elitea Proxy", followed by startup information like:
 
 ```
@@ -109,7 +116,12 @@ The server will start on `http://localhost:4000` by default. You'll first see a 
    curl http://localhost:4000/health
    ```
 
-4. **Stop the service:**
+4. **Check available models:**
+   ```bash
+   docker-compose exec elitea-proxy python elitea-proxy.py --list-models
+   ```
+
+5. **Stop the service:**
    ```bash
    docker-compose down
    ```
@@ -126,6 +138,9 @@ docker run -d \
   -p 4000:4000 \
   -e ELITEA_TOKEN=your_elitea_token_here \
   elitea-proxy
+
+# Check available models
+docker exec elitea-proxy python elitea-proxy.py --list-models
 
 # Check logs
 docker logs elitea-proxy
@@ -157,6 +172,31 @@ All configuration is managed through environment variables. See `.env.example` f
 | `STREAM_CHUNK_SIZE` | `1024` | Streaming response chunk size |
 | `TOKEN_ESTIMATION_RATIO` | `4` | Characters per token for estimation |
 
+## Usage
+
+### Command Line Options
+
+```bash
+# Start the proxy server (default behavior)
+python elitea-proxy.py
+
+# List available models from ELITEA API and exit
+python elitea-proxy.py --list-models
+
+# Show help
+python elitea-proxy.py --help
+```
+
+### Making the Script Executable
+
+```bash
+chmod +x elitea-proxy.py
+
+# Then you can run it directly:
+./elitea-proxy.py --list-models
+./elitea-proxy.py
+```
+
 ## API Endpoints
 
 ### POST /v1/messages
@@ -180,13 +220,37 @@ Health check endpoint that returns:
 
 ## Model Mappings
 
-The proxy automatically maps these Claude models:
+The proxy automatically maps Claude Code model names to the best available ELITEA models. Run `python elitea-proxy.py --list-models` to see currently available models from ELITEA.
 
-| Claude Code Model | ELITEA Model |
-|------------------|------------|
-| `claude-haiku-4-5-20251001` | `eu.anthropic.claude-sonnet-4-20250514-v1:0` |
-| `claude-sonnet-4-5-20250929` | `eu.anthropic.claude-sonnet-4-20250514-v1:0` |
-| `eu.anthropic.claude-sonnet-4-20250514-v1:0` | `eu.anthropic.claude-sonnet-4-20250514-v1:0` |
+### Key Model Mappings
+
+| Claude Code Model | ELITEA Model | Notes |
+|------------------|--------------|-------|
+| `claude-sonnet-4-6` | `eu.anthropic.claude-sonnet-4-6` | Latest Sonnet 4.6 |
+| `claude-sonnet` | `eu.anthropic.claude-sonnet-4-6` | Generic → Latest |
+| `claude-haiku-4-5-20251001` | `eu.anthropic.claude-haiku-4-5-20251001-v1:0` | Proper Haiku model |
+| `claude-haiku` | `eu.anthropic.claude-haiku-4-5-20251001-v1:0` | Generic → Latest Haiku |
+| `claude-3-5-sonnet` | `eu.anthropic.claude-3-7-sonnet-20250219-v1:0` | Upgraded to 3.7 |
+| `claude-opus-4-6` | `eu.anthropic.claude-sonnet-4-6` | No Opus available, uses best Sonnet |
+
+### Discovering Available Models
+
+```bash
+# List all models available from ELITEA API
+python elitea-proxy.py --list-models
+
+# Get help for command options
+python elitea-proxy.py --help
+```
+
+The `--list-models` command queries the ELITEA API in real-time to show:
+- All available Claude models (by version)
+- Available GPT models
+- OpenAI O-series models
+- Embedding models
+- Total model count
+
+If the ELITEA API is unreachable, it falls back to showing the configured local mappings.
 
 ## Security Features
 
@@ -215,13 +279,16 @@ python elitea-proxy.py
 ### Testing the Service
 
 ```bash
+# Check available models (works without ELITEA_TOKEN)
+python elitea-proxy.py --list-models
+
 # Health check
 curl http://localhost:4000/health
 
 # Test message endpoint (requires valid ELITEA_TOKEN)
 curl -X POST http://localhost:4000/v1/messages \
   -H "Content-Type: application/json" \
-  -d '{"model": "claude-haiku-4-5-20251001", "messages": [{"role": "user", "content": "Hello"}]}'
+  -d '{"model": "claude-sonnet-4-6", "messages": [{"role": "user", "content": "Hello"}]}'
 
 # Test token counting
 curl -X POST http://localhost:4000/v1/messages/count_tokens \
@@ -249,7 +316,7 @@ The proxy provides appropriate HTTP status codes and error messages:
 
 ## Files
 
-- `elitea-proxy.py` - Main application
+- `elitea-proxy.py` - Main application with CLI interface
 - `config.py` - Configuration management
 - `requirements.txt` - Python dependencies
 - `.env.example` - Environment configuration template
@@ -321,10 +388,13 @@ SERVER_DEBUG=true LOG_LEVEL=DEBUG python elitea-proxy.py
 Test your installation with these commands:
 
 ```bash
-# 1. Health check (should return status info)
+# 1. List models (requires ELITEA_TOKEN, shows available models)
+python elitea-proxy.py --list-models
+
+# 2. Health check (should return status info)
 curl http://localhost:4000/health
 
-# 2. Token counting (should work without ELITEA API)
+# 3. Token counting (should work without ELITEA API)
 curl -X POST http://localhost:4000/v1/messages/count_tokens \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "test"}]}'
