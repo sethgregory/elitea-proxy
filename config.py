@@ -73,7 +73,16 @@ class Config:
         }
 
         # Parameters to strip from requests
-        self.UNSUPPORTED_PARAMS = ['anthropic_beta']
+        self.UNSUPPORTED_PARAMS = ['anthropic_beta', 'context_management']
+        
+        # Load additional parameters to strip from environment
+        # Example: STRIP_PARAMS=thinking,some_other_param
+        extra_strip = os.getenv('STRIP_PARAMS', '')
+        if extra_strip:
+            extra_params = [p.strip() for p in extra_strip.split(',') if p.strip()]
+            for param in extra_params:
+                if param not in self.UNSUPPORTED_PARAMS:
+                    self.UNSUPPORTED_PARAMS.append(param)
 
         # Headers for ELITEA API
         self.ELITEA_HEADERS = {

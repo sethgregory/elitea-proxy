@@ -7,7 +7,7 @@ A secure Flask-based proxy service that translates Claude Code requests to the E
 - **Secure Configuration**: Environment-based configuration with no hardcoded secrets
 - **Model Discovery**: Query available models from ELITEA API with `--list-models`
 - **Model Mapping**: Automatic mapping between Claude Code and ELITEA model names
-- **Parameter Filtering**: Strips unsupported parameters like `thinking` and `anthropic_beta`
+- **Parameter Filtering**: Strips unsupported parameters like `anthropic_beta` and `context_management`
 - **Token Estimation**: Local token counting to avoid unnecessary API calls
 - **Health Monitoring**: Health check endpoint with ELITEA connectivity testing
 - **Comprehensive Logging**: Structured logging with configurable levels
@@ -165,6 +165,7 @@ All configuration is managed through environment variables. See `.env.example` f
 | `REQUEST_TIMEOUT` | `30` | ELITEA API request timeout (seconds) |
 | `STREAM_CHUNK_SIZE` | `1024` | Streaming response chunk size |
 | `TOKEN_ESTIMATION_RATIO` | `4` | Characters per token for estimation |
+| `STRIP_PARAMS` | (empty) | Comma-separated list of additional parameters to strip from requests |
 
 ## Usage
 
